@@ -31,8 +31,23 @@
             {
                 <div class="alert alert-error">
                     <span class="alert-icon">⚠️</span>
-                    <span>@errorMessage</span>
+                    <div class="alert-content">
+                        <strong>Error</strong>
+                        <span>@errorMessage</span>
+                    </div>
                     <button class="alert-close" @onclick="() => errorMessage = null">×</button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success">
+                    <span class="alert-icon">✅</span>
+                    <div class="alert-content">
+                        <strong>Success</strong>
+                        <span>@successMessage</span>
+                    </div>
+                    <button class="alert-close" @onclick="() => successMessage = null">×</button>
                 </div>
             }
 
@@ -47,7 +62,7 @@
                     {
                         <div class="order-item-card">
                             <div class="item-number">@(orderItems.IndexOf(item) + 1)</div>
-                            
+
                             <div class="form-group">
                                 <label>Menu Item</label>
                                 <select class="form-select" @bind="item.MenuItemId">
@@ -128,6 +143,8 @@
     private List<OrderItem> orderItems = new();
     private HttpClient Client;
     private string errorMessage;
+    private string successMessage;
+
     private bool isSubmitting = false;
 
     protected override async Task OnInitializedAsync()
@@ -208,7 +225,7 @@
     {
         errorMessage = null;
 
-        // Validation
+ 
         if (!orderItems.Any())
         {
             errorMessage = "Please add at least one item to your order.";
@@ -231,7 +248,7 @@
 
         try
         {
-           
+            
             var orderDto = new CreateOrderDto
             {
                 OrderItems = orderItems.Select(i => new CreateOrderItemDto
@@ -265,6 +282,7 @@
         }
     }
 
+   
     public class CreateOrderDto
     {
         public List<CreateOrderItemDto> OrderItems { get; set; }

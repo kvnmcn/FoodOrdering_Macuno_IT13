@@ -1,4 +1,5 @@
 ﻿
+
 .create-order-container {
     max-width: 1000px;
     margin: 0 auto;
@@ -24,6 +25,7 @@
     margin: 0;
 }
 
+/* Loading State */
 .loading-container {
     text-align: center;
     padding: 4rem 2rem;
@@ -57,13 +59,27 @@
     color: #666;
 }
 
+/* Alert Messages */
 .alert {
     padding: 1rem 1.25rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .alert-error {
@@ -72,8 +88,27 @@
     color: #c33;
 }
 
+.alert-success {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    color: #2e7d32;
+}
+
+.alert-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+    .alert-content strong {
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
 .alert-icon {
     font-size: 1.25rem;
+    flex-shrink: 0;
 }
 
 .alert-close {
@@ -81,7 +116,6 @@
     background: none;
     border: none;
     font-size: 1.5rem;
-    color: #c33;
     cursor: pointer;
     padding: 0;
     width: 24px;
@@ -89,8 +123,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
 }
 
+.alert-error .alert-close {
+    color: #c33;
+}
+
+.alert-success .alert-close {
+    color: #2e7d32;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+/* Order Content */
 .order-content {
     background: white;
     border-radius: 12px;
@@ -121,6 +171,7 @@
     font-weight: 500;
 }
 
+/* Order Items Grid */
 .items-grid {
     display: flex;
     flex-direction: column;
@@ -158,6 +209,7 @@
     font-size: 0.875rem;
 }
 
+/* Form Elements */
 .form-group {
     display: flex;
     flex-direction: column;
@@ -186,6 +238,7 @@
         box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
     }
 
+/* Quantity Controls */
 .quantity-controls {
     display: flex;
     align-items: center;
@@ -231,6 +284,7 @@
         border-color: #4CAF50;
     }
 
+/* Item Subtotal */
 .item-subtotal {
     display: flex;
     flex-direction: column;
@@ -252,6 +306,7 @@
     color: #4CAF50;
 }
 
+/* Remove Button */
 .btn-remove {
     width: 40px;
     height: 40px;
@@ -268,6 +323,7 @@
         transform: scale(1.05);
     }
 
+/* Buttons */
 .btn {
     padding: 0.75rem 1.5rem;
     border: none;
@@ -295,47 +351,6 @@
 
 .btn-icon {
     font-size: 1.25rem;
-}
-
-.order-summary {
-    margin: 2rem 0;
-    padding: 1.5rem;
-    background: #f9fafb;
-    border-radius: 10px;
-    border: 2px solid #e5e7eb;
-}
-
-    .order-summary h3 {
-        margin: 0 0 1rem 0;
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1a1a1a;
-    }
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    font-size: 0.9375rem;
-}
-
-.total-row {
-    border-top: 2px solid #d1d5db;
-    margin-top: 0.5rem;
-    padding-top: 1rem;
-    font-size: 1.125rem;
-    font-weight: 600;
-}
-
-.summary-value {
-    color: #4CAF50;
-    font-weight: 600;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
 }
 
 .btn-outline {
@@ -374,6 +389,50 @@
     animation: spin 0.8s linear infinite;
 }
 
+/* Order Summary */
+.order-summary {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+}
+
+    .order-summary h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 0.9375rem;
+}
+
+.total-row {
+    border-top: 2px solid #d1d5db;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.summary-value {
+    color: #4CAF50;
+    font-weight: 600;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .create-order-container {
         padding: 1rem;

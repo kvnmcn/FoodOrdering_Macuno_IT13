@@ -1,89 +1,189 @@
-@page "/menuitems"
+﻿@page "/menuitems"
 @inject IHttpClientFactory ClientFactory
 @inject IJSRuntime JS
 
+<div class="menu-items-container">
+    <div class="header-section">
+        <h3>Menu Items</h3>
+        <button class="add-item" @onclick="ShowAddModal">
+            <span class="btn-icon">+</span>
+            Add Menu Item
+        </button>
+    </div>
 
-<h3>Menu Items</h3>
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-error">
+            <span class="alert-icon">⚠️</span>
+            <div class="alert-content">
+                <strong>Error</strong>
+                <span>@errorMessage</span>
+            </div>
+            <button class="alert-close" @onclick="() => errorMessage = null">×</button>
+        </div>
+    }
 
-<button class=" mb-3 add-item" @onclick="ShowAddModal">Add Menu Item</button>
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">
+            <span class="alert-icon">✅</span>
+            <div class="alert-content">
+                <strong>Success</strong>
+                <span>@successMessage</span>
+            </div>
+            <button class="alert-close" @onclick="() => successMessage = null">×</button>
+        </div>
+    }
 
-@if (menuItems == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Available</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in menuItems)
-            {
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading menu items...</p>
+        </div>
+    }
+    else if (hasLoadError)
+    {
+        <div class="empty-state error-state">
+            <p>⚠️ Unable to load menu items.</p>
+            <button class="btn-retry" @onclick="LoadMenuItems">Retry</button>
+        </div>
+    }
+    else if (menuItems == null || !menuItems.Any())
+    {
+        <div class="empty-state">
+            <p>📋 No menu items available yet.</p>
+            <p class="empty-subtitle">Click "Add Menu Item" to get started.</p>
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>@item.Name</td>
-                    <td>@item.Category</td>
-                    <td>@item.Price.ToString("C")</td>
-                    <td>@(item.IsAvailable ? "Yes" : "No")</td>
-                    <td>
-                        <button class="edit" @onclick="() => ShowEditModal(item)">Edit</button>
-                        <button class="delete" @onclick="() => DeleteItem(item.Id)">Delete</button>
-                    </td>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Available</th>
+                    <th>Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var item in menuItems)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Category</td>
+                        <td>@item.Price.ToString("C")</td>
+                        <td>
+                            <span class="availability-badge @(item.IsAvailable ? "available" : "unavailable")">
+                                @(item.IsAvailable ? "Available" : "Unavailable")
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="edit" @onclick="() => ShowEditModal(item)" title="Edit">
+                                    <span>Edit</span>
+                                </button>
+                                <button class="delete" @onclick="() => DeleteItem(item.Id)" title="Delete">
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 
-@if (showModal)
-{
-    <div class="modal show d-block" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@modalTitle</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input class="form-control" @bind="currentItem.Name" />
+    @if (showModal)
+    {
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@modalTitle</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal">×</button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <input class="form-control" @bind="currentItem.Category" />
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(modalError))
+                        {
+                            <div class="modal-alert">
+                                <span>⚠️ @modalError</span>
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">Name *</label>
+                            <input class="form-control @(string.IsNullOrWhiteSpace(currentItem.Name) && showValidation ? "is-invalid" : "")"
+                                   @bind="currentItem.Name"
+                                   placeholder="Enter item name" />
+                            @if (string.IsNullOrWhiteSpace(currentItem.Name) && showValidation)
+                            {
+                                <span class="validation-error">Name is required</span>
+                            }
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category *</label>
+                            <input class="form-control @(string.IsNullOrWhiteSpace(currentItem.Category) && showValidation ? "is-invalid" : "")"
+                                   @bind="currentItem.Category"
+                                   placeholder="Enter category" />
+                            @if (string.IsNullOrWhiteSpace(currentItem.Category) && showValidation)
+                            {
+                                <span class="validation-error">Category is required</span>
+                            }
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price *</label>
+                            <input type="number"
+                                   class="form-control @(currentItem.Price <= 0 && showValidation ? "is-invalid" : "")"
+                                   step="0.01"
+                                   min="0.01"
+                                   @bind="currentItem.Price"
+                                   placeholder="0.00" />
+                            @if (currentItem.Price <= 0 && showValidation)
+                            {
+                                <span class="validation-error">Price must be greater than 0</span>
+                            }
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="availableCheck" @bind="currentItem.IsAvailable" />
+                            <label class="form-check-label" for="availableCheck">Available for ordering</label>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Price</label>
-                        <input type="number" class="form-control" step="0.01" @bind="currentItem.Price" />
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="CloseModal" disabled="@isSaving">Cancel</button>
+                        <button class="btn btn-primary" @onclick="SaveItem" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-small"></span>
+                                <span>Saving...</span>
+                            }
+                            else
+                            {
+                                <span>Save</span>
+                            }
+                        </button>
                     </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" @bind="currentItem.IsAvailable" />
-                        <label class="form-check-label">Available</label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveItem">Save</button>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="modal-backdrop show"></div>
-}
+        <div class="modal-backdrop show"></div>
+    }
+</div>
 
 @code {
     private List<MenuItem> menuItems;
     private bool showModal = false;
     private string modalTitle = "Add Menu Item";
     private MenuItem currentItem = new();
-    private HttpClient Client; 
+    private HttpClient Client;
+    private string errorMessage;
+    private string successMessage;
+    private string modalError;
+    private bool isLoading = false;
+    private bool hasLoadError = false;
+    private bool isSaving = false;
+    private bool showValidation = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -93,13 +193,52 @@ else
 
     private async Task LoadMenuItems()
     {
-        menuItems = await Client.GetFromJsonAsync<List<MenuItem>>("api/menuitems");
+        isLoading = true;
+        hasLoadError = false;
+        errorMessage = null;
+
+        try
+        {
+            menuItems = await Client.GetFromJsonAsync<List<MenuItem>>("api/menuitems");
+
+            if (menuItems == null)
+            {
+                menuItems = new List<MenuItem>();
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            errorMessage = "Network error: Unable to reach the server. Please check your connection.";
+            hasLoadError = true;
+            menuItems = new List<MenuItem>();
+            Console.WriteLine($"HTTP Error: {httpEx.Message}");
+        }
+        catch (System.Text.Json.JsonException jsonEx)
+        {
+            errorMessage = "Data format error: Unable to parse server response.";
+            hasLoadError = true;
+            menuItems = new List<MenuItem>();
+            Console.WriteLine($"JSON Error: {jsonEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unexpected error loading menu items: {ex.Message}";
+            hasLoadError = true;
+            menuItems = new List<MenuItem>();
+            Console.WriteLine($"Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void ShowAddModal()
     {
-        currentItem = new MenuItem();
+        currentItem = new MenuItem { IsAvailable = true, Price = 0 };
         modalTitle = "Add Menu Item";
+        modalError = null;
+        showValidation = false;
         showModal = true;
     }
 
@@ -114,31 +253,156 @@ else
             IsAvailable = item.IsAvailable
         };
         modalTitle = "Edit Menu Item";
+        modalError = null;
+        showValidation = false;
         showModal = true;
     }
 
-    private void CloseModal() => showModal = false;
+    private void CloseModal()
+    {
+        showModal = false;
+        showValidation = false;
+        modalError = null;
+    }
+
+    private bool ValidateItem()
+    {
+        showValidation = true;
+
+        if (string.IsNullOrWhiteSpace(currentItem.Name))
+        {
+            modalError = "Please enter a name for the menu item.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentItem.Category))
+        {
+            modalError = "Please enter a category.";
+            return false;
+        }
+
+        if (currentItem.Price <= 0)
+        {
+            modalError = "Please enter a valid price greater than 0.";
+            return false;
+        }
+
+        return true;
+    }
 
     private async Task SaveItem()
     {
-        if (currentItem.Id == 0)
+        modalError = null;
+
+        if (!ValidateItem())
         {
-            await Client.PostAsJsonAsync("api/menuitems", currentItem);
+            return;
         }
-        else
+
+        isSaving = true;
+
+        try
         {
-            await Client.PutAsJsonAsync($"api/menuitems/{currentItem.Id}", currentItem);
+            HttpResponseMessage response;
+
+            if (currentItem.Id == 0)
+            {
+                response = await Client.PostAsJsonAsync("api/menuitems", currentItem);
+            }
+            else
+            {
+                response = await Client.PutAsJsonAsync($"api/menuitems/{currentItem.Id}", currentItem);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = currentItem.Id == 0
+                    ? $"Menu item '{currentItem.Name}' added successfully!"
+                    : $"Menu item '{currentItem.Name}' updated successfully!";
+
+                await LoadMenuItems();
+                CloseModal();
+
+                // Auto-clear success message after 3 seconds
+                await Task.Delay(3000);
+                successMessage = null;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                modalError = $"Invalid data: {errorContent}";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                modalError = "A menu item with this name already exists.";
+            }
+            else
+            {
+                modalError = $"Failed to save menu item. Status: {response.StatusCode}";
+            }
         }
-        await LoadMenuItems();
-        CloseModal();
+        catch (HttpRequestException httpEx)
+        {
+            modalError = "Network error: Unable to reach the server.";
+            Console.WriteLine($"HTTP Error: {httpEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            modalError = $"Error saving menu item: {ex.Message}";
+            Console.WriteLine($"Error: {ex}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
     }
 
     private async Task DeleteItem(int id)
     {
-        if (await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?"))
+        var item = menuItems.FirstOrDefault(m => m.Id == id);
+        var itemName = item?.Name ?? "this item";
+
+        if (!await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{itemName}'?"))
         {
-            await Client.DeleteAsync($"api/menuitems/{id}");
-            await LoadMenuItems();
+            return;
+        }
+
+        try
+        {
+            var response = await Client.DeleteAsync($"api/menuitems/{id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = $"Menu item '{itemName}' deleted successfully!";
+                await LoadMenuItems();
+
+                // Auto-clear success message after 3 seconds
+                await Task.Delay(3000);
+                successMessage = null;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                errorMessage = "Menu item not found. It may have already been deleted.";
+                await LoadMenuItems();
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                errorMessage = "Cannot delete this menu item because it's being used in existing orders.";
+            }
+            else
+            {
+                errorMessage = $"Failed to delete menu item. Status: {response.StatusCode}";
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            errorMessage = "Network error: Unable to reach the server.";
+            Console.WriteLine($"HTTP Error: {httpEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting menu item: {ex.Message}";
+            Console.WriteLine($"Error: {ex}");
         }
     }
 

@@ -1,0 +1,142 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f1f8f3;
+    color: #1b5e20;
+}
+
+h3 {
+    color: #2e7d32;
+    margin-bottom: 1rem;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+    button:focus {
+        outline: none;
+    }
+
+    button.add-item {
+        background-color: #2e7d32;
+        color: #fff;
+    }
+
+        button.add-item:hover {
+            background-color: #388e3c;
+        }
+
+    button.edit {
+        background-color: #66bb6a;
+        color: #fff;
+    }
+
+        button.edit:hover {
+            background-color: #4caf50;
+        }
+
+    button.delete {
+        background-color: #81c784;
+        color: #fff;
+    }
+
+        button.delete:hover {
+            background-color: #66bb6a;
+        }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+thead {
+    background-color: #2e7d32;
+    color: #fff;
+    text-align: left;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #c8e6c9;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #e8f5e9;
+}
+
+tbody tr:hover {
+    background-color: #c8e6c9;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    width: 400px;
+    max-width: 90%;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #a5d6a7;
+    margin-bottom: 1rem;
+}
+
+    .modal-header h5 {
+        color: #2e7d32;
+        margin: 0;
+    }
+
+.modal-body label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.modal-body input[type="text"],
+.modal-body input[type="number"] {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #a5d6a7;
+    margin-bottom: 1rem;
+}
+
+.modal-body input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+    .modal-footer button {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(46, 125, 50, 0.2);
+    z-index: 500;
+}

@@ -1,0 +1,79 @@
+@page "/orders"
+@inject IHttpClientFactory ClientFactory
+
+<h3>Orders</h3>
+
+@if (orders == null)
+{
+    <p>Loading...</p>
+}
+else if (!orders.Any())
+{
+    <p>No orders yet.</p>
+}
+else
+{
+    <table class="orders-table">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Total Amount</th>
+                <th>Items</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>@order.Id</td>
+                    <td>@order.Date.ToString("g")</td>
+                    <td>@order.TotalAmount.ToString("C")</td>
+                    <td>
+                        <ul>
+                            @foreach (var item in order.OrderItems)
+                            {
+                                <li>@item.MenuItem.Name x @item.Quantity (@item.Price.ToString("C"))</li>
+                            }
+                        </ul>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrderViewModel> orders;
+
+    private HttpClient Client;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Client = ClientFactory.CreateClient("API");
+        orders = await Client.GetFromJsonAsync<List<OrderViewModel>>("api/orders");
+    }
+
+    public class OrderViewModel
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public decimal TotalAmount { get; set; }
+        public List<OrderItemViewModel> OrderItems { get; set; }
+    }
+
+    public class OrderItemViewModel
+    {
+        public int Id { get; set; }
+        public MenuItemViewModel MenuItem { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+    }
+
+    public class MenuItemViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+    }
+}

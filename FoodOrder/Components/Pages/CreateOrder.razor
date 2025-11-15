@@ -1,0 +1,291 @@
+﻿@page "/create-order"
+@inject IHttpClientFactory ClientFactory
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<link href="css/create-order.css" rel="stylesheet" />
+
+<div class="create-order-container">
+    <div class="order-header">
+        <h2>Create New Order</h2>
+        <p class="subtitle">Select items and quantities to place your order</p>
+    </div>
+
+    @if (menuItems == null)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading menu items...</p>
+        </div>
+    }
+    else if (!menuItems.Any())
+    {
+        <div class="empty-state">
+            <p>No menu items available. Please add items to the menu first.</p>
+        </div>
+    }
+    else
+    {
+        <div class="order-content">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-error">
+                    <span class="alert-icon">⚠️</span>
+                    <span>@errorMessage</span>
+                    <button class="alert-close" @onclick="() => errorMessage = null">×</button>
+                </div>
+            }
+
+            <div class="order-items-section">
+                <div class="section-header">
+                    <h3>Order Items</h3>
+                    <span class="item-count">@orderItems.Count item(s)</span>
+                </div>
+
+                <div class="items-grid">
+                    @foreach (var item in orderItems)
+                    {
+                        <div class="order-item-card">
+                            <div class="item-number">@(orderItems.IndexOf(item) + 1)</div>
+                            
+                            <div class="form-group">
+                                <label>Menu Item</label>
+                                <select class="form-select" @bind="item.MenuItemId">
+                                    <option value="0">-- Select an item --</option>
+                                    @foreach (var menu in menuItems)
+                                    {
+                                        <option value="@menu.Id">@menu.Name - @menu.Price.ToString("C")</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" @onclick="() => DecrementQuantity(item)" disabled="@(item.Quantity <= 1)">−</button>
+                                    <input type="number" min="1" max="999" class="qty-input" @bind="item.Quantity" @bind:event="oninput" />
+                                    <button class="qty-btn" @onclick="() => IncrementQuantity(item)">+</button>
+                                </div>
+                            </div>
+
+                            <div class="item-subtotal">
+                                @if (item.MenuItemId > 0)
+                                {
+                                    var selectedItem = menuItems.FirstOrDefault(m => m.Id == item.MenuItemId);
+                                    if (selectedItem != null)
+                                    {
+                                        <span class="subtotal-label">Subtotal:</span>
+                                        <span class="subtotal-amount">@((selectedItem.Price * item.Quantity).ToString("C"))</span>
+                                    }
+                                }
+                            </div>
+
+                            <button class="btn-remove" @onclick="() => RemoveItem(item)" title="Remove item">
+                                <span>🗑️</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <button class="btn btn-secondary" @onclick="AddItem">
+                    <span class="btn-icon">+</span>
+                    Add Another Item
+                </button>
+            </div>
+
+            <div class="order-summary">
+                <h3>Order Summary</h3>
+                <div class="summary-row">
+                    <span>Total Items:</span>
+                    <span class="summary-value">@orderItems.Sum(i => i.Quantity)</span>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Total Amount:</span>
+                    <span class="summary-value">@CalculateTotal().ToString("C")</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-outline" @onclick="CancelOrder">Cancel</button>
+                <button class="btn btn-primary" @onclick="SubmitOrder" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-small"></span>
+                        <span>Submitting...</span>
+                    }
+                    else
+                    {
+                        <span>Place Order</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<MenuItem> menuItems;
+    private List<OrderItem> orderItems = new();
+    private HttpClient Client;
+    private string errorMessage;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Client = ClientFactory.CreateClient("API");
+        try
+        {
+            menuItems = await Client.GetFromJsonAsync<List<MenuItem>>("api/menuitems");
+            if (menuItems != null && menuItems.Any())
+            {
+                AddItem();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load menu items: {ex.Message}";
+        }
+    }
+
+    private void AddItem()
+    {
+        orderItems.Add(new OrderItem { Quantity = 1, MenuItemId = 0 });
+    }
+
+    private void RemoveItem(OrderItem item)
+    {
+        if (orderItems.Count > 1)
+        {
+            orderItems.Remove(item);
+        }
+        else
+        {
+            errorMessage = "You must have at least one item in your order.";
+        }
+    }
+
+    private void IncrementQuantity(OrderItem item)
+    {
+        if (item.Quantity < 999)
+        {
+            item.Quantity++;
+        }
+    }
+
+    private void DecrementQuantity(OrderItem item)
+    {
+        if (item.Quantity > 1)
+        {
+            item.Quantity--;
+        }
+    }
+
+    private decimal CalculateTotal()
+    {
+        decimal total = 0;
+        foreach (var item in orderItems)
+        {
+            if (item.MenuItemId > 0)
+            {
+                var menuItem = menuItems.FirstOrDefault(m => m.Id == item.MenuItemId);
+                if (menuItem != null)
+                {
+                    total += menuItem.Price * item.Quantity;
+                }
+            }
+        }
+        return total;
+    }
+
+    private void CancelOrder()
+    {
+        orderItems.Clear();
+        AddItem();
+        errorMessage = null;
+    }
+
+    private async Task SubmitOrder()
+    {
+        errorMessage = null;
+
+        // Validation
+        if (!orderItems.Any())
+        {
+            errorMessage = "Please add at least one item to your order.";
+            return;
+        }
+
+        if (orderItems.Any(i => i.MenuItemId == 0))
+        {
+            errorMessage = "Please select a menu item for all rows.";
+            return;
+        }
+
+        if (orderItems.Any(i => i.Quantity < 1))
+        {
+            errorMessage = "Quantity must be at least 1 for all items.";
+            return;
+        }
+
+        isSubmitting = true;
+
+        try
+        {
+           
+            var orderDto = new CreateOrderDto
+            {
+                OrderItems = orderItems.Select(i => new CreateOrderItemDto
+                {
+                    MenuItemId = i.MenuItemId,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
+
+            var response = await Client.PostAsJsonAsync("api/orders", orderDto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Order created successfully! 🎉");
+                orderItems.Clear();
+                AddItem();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Failed to create order: {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error submitting order: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    public class CreateOrderDto
+    {
+        public List<CreateOrderItemDto> OrderItems { get; set; }
+    }
+
+    public class CreateOrderItemDto
+    {
+        public int MenuItemId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class OrderItem
+    {
+        public int MenuItemId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class MenuItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+    }
+}

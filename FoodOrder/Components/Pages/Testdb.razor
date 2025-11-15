@@ -1,0 +1,43 @@
+@page "/testdb"
+@inject IHttpClientFactory ClientFactory
+
+<h3>Test Database Connection</h3>
+
+@if (menuItems == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in menuItems)
+        {
+            <li>@item.Name - @item.Price</li>
+        }
+    </ul>
+}
+
+@code {
+
+    private List<MenuItem> menuItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = ClientFactory.CreateClient("API");
+            menuItems = await client.GetFromJsonAsync<List<MenuItem>>("api/menuitems");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error connecting to API: {ex.Message}");
+        }
+    }
+
+    public class MenuItem
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+    }
+}
